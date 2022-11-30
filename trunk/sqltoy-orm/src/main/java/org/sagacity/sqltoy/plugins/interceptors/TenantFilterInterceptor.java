@@ -30,6 +30,9 @@ public class TenantFilterInterceptor implements SqlInterceptor {
 			return sqlToyResult;
 		}
 		EntityMeta entityMeta = sqlToyContext.getEntityMeta(entityClass);
+
+		// 可以通过判断是否存在统一的租户字段方式，而未必一定要通过@Tenant 注解模式
+		// if(entityMeta.getColumnName("tenantId")!=null)
 		// 不存在租户过滤控制
 		if (entityMeta.getTenantField() == null) {
 			return sqlToyResult;
