@@ -18,6 +18,7 @@ import org.sagacity.sqltoy.model.QueryExecutor;
 import org.sagacity.sqltoy.model.QueryResult;
 import org.sagacity.sqltoy.model.StoreResult;
 import org.sagacity.sqltoy.model.TableMeta;
+import org.sagacity.sqltoy.model.inner.QueryExecutorExtend;
 
 /**
  * @project sqltoy-orm
@@ -60,8 +61,9 @@ public class InfluxDBDialect implements Dialect {
 
 	@Override
 	public QueryResult findBySql(SqlToyContext sqlToyContext, SqlToyConfig sqlToyConfig, String sql,
-			Object[] paramsValue, RowCallbackHandler rowCallbackHandler, DecryptHandler decryptHandler, Connection conn,
-			LockMode lockMode, Integer dbType, String dialect, int fetchSize, int maxRows) throws Exception {
+			Object[] paramsValue, QueryExecutorExtend queryExecutorExtend, DecryptHandler decryptHandler,
+			Connection conn, LockMode lockMode, Integer dbType, String dialect, int fetchSize, int maxRows)
+			throws Exception {
 		// TODO Auto-generated method stub
 		return null;
 	}
