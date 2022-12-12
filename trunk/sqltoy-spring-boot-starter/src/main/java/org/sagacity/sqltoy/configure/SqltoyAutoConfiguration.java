@@ -38,7 +38,7 @@ import org.springframework.context.annotation.Bean;
  * @version v1.0,Date:2018年12月26日
  * @modify {Date:2020-2-20,完善配置支持es等,实现完整功能}
  */
-@AutoConfiguration 
+@AutoConfiguration
 @EnableConfigurationProperties(SqlToyContextProperties.class)
 public class SqltoyAutoConfiguration {
 	@Autowired
@@ -182,6 +182,9 @@ public class SqltoyAutoConfiguration {
 		sqlToyContext.setSecurePublicKey(properties.getSecurePublicKey());
 		// 修改多少条记录做特别提示
 		sqlToyContext.setUpdateTipCount(properties.getUpdateTipCount());
+		if (properties.getOverPageToFirst() != null) {
+			sqlToyContext.setOverPageToFirst(properties.getOverPageToFirst());
+		}
 		// 设置公共统一属性的处理器
 		String unfiyHandler = properties.getUnifyFieldsHandler();
 		if (StringUtil.isNotBlank(unfiyHandler)) {

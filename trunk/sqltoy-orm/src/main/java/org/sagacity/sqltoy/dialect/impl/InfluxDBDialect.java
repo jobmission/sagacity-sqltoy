@@ -8,7 +8,6 @@ import java.util.List;
 import org.sagacity.sqltoy.SqlToyContext;
 import org.sagacity.sqltoy.callback.DecryptHandler;
 import org.sagacity.sqltoy.callback.ReflectPropsHandler;
-import org.sagacity.sqltoy.callback.RowCallbackHandler;
 import org.sagacity.sqltoy.callback.UpdateRowHandler;
 import org.sagacity.sqltoy.config.model.SqlToyConfig;
 import org.sagacity.sqltoy.dialect.Dialect;
