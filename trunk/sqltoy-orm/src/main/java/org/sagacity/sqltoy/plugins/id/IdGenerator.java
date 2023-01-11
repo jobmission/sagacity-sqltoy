@@ -27,7 +27,7 @@ public interface IdGenerator {
 	 */
 	public Object getId(String tableName, String signature, String[] relatedColumns, Object[] relatedColValue,
 			Date bizDate, String idJavaType, int length, int sequencSize);
-
+	
 	public default void initialize(SqlToyContext sqlToyContext) throws Exception {
 
 	};
