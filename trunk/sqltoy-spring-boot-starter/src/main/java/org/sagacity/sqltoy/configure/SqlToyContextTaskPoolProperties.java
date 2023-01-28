@@ -19,7 +19,7 @@ public class SqlToyContextTaskPoolProperties {
     /**
      * 线程前缀
      */
-    private String threadNamePrefix = "sqltoyDataSource";
+    private String threadNamePrefix = "sqltoyThreadPool";
 
     /**
      * 线程池维护线程的最少数量,核心线程数
