@@ -48,6 +48,8 @@ import org.sagacity.sqltoy.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.alibaba.ttl.threadpool.TtlExecutors;
+
 //------------------了解 sqltoy的关键优势: -------------------------------------------------------------------------------------------*/
 //1、最简最直观的sql编写方式(不仅仅是查询语句)，采用条件参数前置处理规整法，让sql语句部分跟客户端保持高度一致
 //2、sql中支持注释(规避了对hint特性的影响,知道hint吗?搜oracle hint)，和动态更新加载，便于开发和后期维护整个过程的管理
@@ -354,7 +356,7 @@ public class SqlToyContext {
 	/**
 	 * sqltoy的线程池
 	 */
-	private Executor taskExecutor = ForkJoinPool.commonPool();
+	private Executor taskExecutor = TtlExecutors.getTtlExecutor(ForkJoinPool.commonPool());
 
 	/**
 	 * @todo 初始化
