@@ -553,7 +553,7 @@ public class DefaultDialectUtils {
 											|| "YES".equalsIgnoreCase(isAutoIncrement)
 											|| "Y".equalsIgnoreCase(isAutoIncrement) || "1".equals(isAutoIncrement))) {
 										colMeta.setAutoIncrement(true);
-									} 
+									}
 								} catch (Exception e) {
 								}
 							}
