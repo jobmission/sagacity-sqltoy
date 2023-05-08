@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
  * @author zhongxuchen
  * @version v1.0,Date:2013-3-23
  * @modify Date:2020-7-15 {增加l-like,r-like为参数单边补充%从而不破坏索引,默认是两边}
+ * @modify Date:2023-4-18 {增加to-string}
+ * @modify Date:2023-05-01 {优化cache-arg,修复priorMatchEqual存在的bug}
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class ParamFilterUtils {
@@ -906,7 +908,7 @@ public class ParamFilterUtils {
 	 */
 	private static Object toNumber(Object paramValue, String dataType) {
 		Object result;
-		BigDecimal value = new BigDecimal(paramValue.toString().replaceAll(",", ""));
+		BigDecimal value = new BigDecimal(paramValue.toString().replace(",", ""));
 		if (dataType == null) {
 			result = value;
 		} else if ("integer".equals(dataType) || "int".equals(dataType)) {
