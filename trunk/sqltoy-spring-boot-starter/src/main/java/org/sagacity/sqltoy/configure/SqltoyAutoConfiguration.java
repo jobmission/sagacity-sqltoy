@@ -8,7 +8,9 @@ import java.util.concurrent.Executor;
 
 import org.sagacity.sqltoy.SqlToyContext;
 import org.sagacity.sqltoy.config.model.ElasticEndpoint;
+import org.sagacity.sqltoy.dao.LightDao;
 import org.sagacity.sqltoy.dao.SqlToyLazyDao;
+import org.sagacity.sqltoy.dao.impl.LightDaoImpl;
 import org.sagacity.sqltoy.dao.impl.SqlToyLazyDaoImpl;
 import org.sagacity.sqltoy.integration.ConnectionFactory;
 import org.sagacity.sqltoy.integration.impl.SpringAppContext;
@@ -439,7 +441,7 @@ public class SqltoyAutoConfiguration {
 	}
 
 	/**
-	 * 5.2 版本要注入sqlToyContext
+	 * 5.2+ 版本要注入sqlToyContext
 	 * 
 	 * @return 返回预定义的通用Dao实例
 	 */
@@ -451,8 +453,16 @@ public class SqltoyAutoConfiguration {
 		return lazyDao;
 	}
 
+	@Bean(name = "lightDao")
+	@ConditionalOnMissingBean
+	LightDao lightDao(SqlToyContext sqlToyContext) {
+		LightDaoImpl lightDao = new LightDaoImpl();
+		lightDao.setSqlToyContext(sqlToyContext);
+		return lightDao;
+	}
+
 	/**
-	 * 5.2 版本要注入sqlToyLazyDao
+	 * 5.2+ 版本要注入sqlToyLazyDao
 	 * 
 	 * @return 返回预定义的通用CRUD service实例
 	 */
