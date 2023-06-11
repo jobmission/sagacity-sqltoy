@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.sagacity.sqltoy.SqlToyConstants;
 import org.sagacity.sqltoy.config.model.EntityMeta;
 import org.sagacity.sqltoy.config.model.FieldMeta;
 import org.sagacity.sqltoy.config.model.PKStrategy;
@@ -174,11 +175,6 @@ public class DialectExtUtils {
 		// 是否是各种数据库的当前时间、日期的字符
 		String defaultLow = defaultValue.toLowerCase();
 		boolean isCurrentTime = SqlUtilsExt.isCurrentTime(defaultLow);
-		// 无法解决同一个POJO的默认值注解在不同数据库下的兼容
-		// if (isCurrentTime) {
-		// sql.append(defaultValue);
-		// return;
-		// }
 		int dateType = -1;
 		// 时间
 		if ("java.time.localtime".equals(fieldType) || "java.sql.time".equals(fieldType)) {
@@ -316,7 +312,6 @@ public class DialectExtUtils {
 		if (null != mergeIgnoreSql) {
 			return mergeIgnoreSql;
 		}
-		boolean isSupportNUL = StringUtil.isBlank(isNullFunction) ? false : true;
 		// 创建记录时，创建时间、最后修改时间等取数据库时间
 		IgnoreCaseSet createSqlTimeFields = (unifyFieldsHandler == null
 				|| unifyFieldsHandler.createSqlTimeFields() == null) ? new IgnoreCaseSet()
@@ -327,21 +322,35 @@ public class DialectExtUtils {
 		String columnName;
 		sql.append("merge into ");
 		sql.append(realTable);
-		sql.append(" ta ");
+		// postgresql15+ 不支持别名
+		if (DBType.POSTGRESQL15 != dbType) {
+			sql.append(" ta ");
+		}
 		sql.append(" using (select ");
+		FieldMeta fieldMeta;
 		for (int i = 0; i < columnSize; i++) {
-			columnName = entityMeta.getColumnName(entityMeta.getFieldsArray()[i]);
-			columnName = ReservedWordsUtil.convertWord(columnName, dbType);
+			fieldMeta = entityMeta.getFieldMeta(entityMeta.getFieldsArray()[i]);
+			columnName = ReservedWordsUtil.convertWord(fieldMeta.getColumnName(), dbType);
 			if (i > 0) {
 				sql.append(",");
 			}
-			sql.append("? as ");
-			sql.append(columnName);
+			// postgresql15+ 需要case(? as type) as column
+			if (DBType.POSTGRESQL15 == dbType) {
+				PostgreSqlDialectUtils.wrapSelectFields(sql, columnName, fieldMeta);
+			} else if (DBType.H2 == dbType) {
+				H2DialectUtils.wrapSelectFields(sql, columnName, fieldMeta);
+			} else if (DBType.DB2 == dbType) {
+				DB2DialectUtils.wrapSelectFields(sql, columnName, fieldMeta);
+			} else {
+				sql.append("? as ");
+				sql.append(columnName);
+			}
 		}
 		if (StringUtil.isNotBlank(fromTable)) {
 			sql.append(" from ").append(fromTable);
 		}
-		sql.append(") tv on (");
+		// sql.append(") tv on (");
+		sql.append(SqlToyConstants.MERGE_ALIAS_ON);
 		StringBuilder idColumns = new StringBuilder();
 		// 组织on部分的主键条件判断
 		for (int i = 0, n = entityMeta.getIdArray().length; i < n; i++) {
@@ -351,7 +360,13 @@ public class DialectExtUtils {
 				sql.append(" and ");
 				idColumns.append(",");
 			}
-			sql.append(" ta.").append(columnName).append("=tv.").append(columnName);
+			// 不支持别名
+			if (DBType.POSTGRESQL15 == dbType) {
+				sql.append(realTable + ".");
+			} else {
+				sql.append("ta.");
+			}
+			sql.append(columnName).append("=tv.").append(columnName);
 			idColumns.append("ta.").append(columnName);
 		}
 		sql.append(" ) ");
@@ -362,7 +377,6 @@ public class DialectExtUtils {
 		boolean allIds = (entityMeta.getRejectIdFieldArray() == null);
 		if (!allIds) {
 			int rejectIdColumnSize = entityMeta.getRejectIdFieldArray().length;
-			FieldMeta fieldMeta;
 			// update 只针对非主键字段进行修改
 			for (int i = 0; i < rejectIdColumnSize; i++) {
 				fieldMeta = entityMeta.getFieldMeta(entityMeta.getRejectIdFieldArray()[i]);
@@ -385,7 +399,8 @@ public class DialectExtUtils {
 			}
 		}
 		// 主键未匹配上则进行插入操作
-		sql.append(" when not matched then insert (");
+		sql.append(SqlToyConstants.MERGE_INSERT);
+		sql.append(" (");
 		String idsColumnStr = idColumns.toString();
 		// 不考虑只有一个字段且还是主键的情况
 		if (allIds) {
@@ -402,7 +417,7 @@ public class DialectExtUtils {
 				sql.append(columnName);
 				sql.append(") values (");
 				sql.append(insertRejIdColValues).append(",");
-				if (isAssignPK && isSupportNUL) {
+				if (isAssignPK) {
 					sql.append(isNullFunction);
 					sql.append("(tv.").append(columnName).append(",");
 					sql.append(sequence).append(") ");
