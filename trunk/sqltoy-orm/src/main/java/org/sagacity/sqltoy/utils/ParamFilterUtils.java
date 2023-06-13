@@ -891,19 +891,22 @@ public class ParamFilterUtils {
 		}
 		String[] tmpAry = null;
 		boolean isAdd = false;
+		String firstString = dateStr.toLowerCase();
+		int addValue = 0;
 		// 1:hour;2:day;3:week;4:month;5:year
 		int addType = 2;
 		if (dateStr.contains("+")) {
 			tmpAry = dateStr.split("\\+");
 			isAdd = true;
+			firstString = tmpAry[0].trim().toLowerCase();
 		} // sysdate()-2d形式，排除2023-05-20 纯以数字开头的纯日期
 		else if (!StringUtil.matches(dateStr, "^\\d{2,4}") && dateStr.contains("-")) {
 			tmpAry = dateStr.split("\\-");
 			isAdd = false;
+			firstString = tmpAry[0].trim().toLowerCase();
 		}
 		if (tmpAry != null && tmpAry.length == 2) {
 			String addStr = tmpAry[1].trim();
-			int addValue = 0;
 			// sysdate()-2d 字母结尾
 			if (StringUtil.matches(addStr, "[a-z|A-Z]$")) {
 				// 最后一位字母
@@ -924,59 +927,61 @@ public class ParamFilterUtils {
 			if (!isAdd) {
 				addValue = 0 - addValue;
 			}
-			Date starDate;
-			String firstString = tmpAry[0].trim().toLowerCase();
-			// '2019-12-13' 形式
-			if (firstString.startsWith("'") && firstString.endsWith("'")) {
-				firstString = firstString.substring(1, firstString.length() - 1);
-			}
-			if ("sysdate()".equals(firstString) || "now()".equals(firstString)) {
-				starDate = DateUtil.getNowTime();
-			} else if ("first_of_month".equals(firstString)) {
-				starDate = DateUtil.firstDayOfMonth(DateUtil.getNowTime());
-			} else if ("first_of_year".equals(firstString)) {
-				starDate = DateUtil.parse((DateUtil.getYear(DateUtil.getNowTime()) + "-01-01"), "yyyy-MM-dd");
-			} else if ("last_of_month".equals(firstString)) {
-				starDate = DateUtil.lastDayOfMonth(DateUtil.getNowTime());
-			} else if ("last_of_year".equals(firstString)) {
-				starDate = DateUtil.parse((DateUtil.getYear(DateUtil.getNowTime()) + "-12-31"), "yyyy-MM-dd");
-			} else if ("first_of_month".equals(firstString)) {
-				starDate = DateUtil.firstDayOfMonth(DateUtil.getNowTime());
-			} else if ("first_of_week".equals(firstString)) {
-				Calendar ca = Calendar.getInstance();
-				ca.setTime(DateUtil.parse(DateUtil.getNowTime(), DAY_FORMAT));
-				ca.add(Calendar.DAY_OF_WEEK, -ca.get(Calendar.DAY_OF_WEEK) + 2);
-				starDate = ca.getTime();
-			} else if ("last_of_week".equals(firstString)) {
-				Calendar ca = Calendar.getInstance();
-				ca.setTime(DateUtil.parse(DateUtil.getNowTime(), DAY_FORMAT));
-				ca.add(Calendar.DAY_OF_WEEK, -ca.get(Calendar.DAY_OF_WEEK) + 8);
-				starDate = ca.getTime();
-			} else {
-				starDate = DateUtil.parseString(firstString);
-			}
-			// 小时
-			if (addType == 1) {
-				return DateUtil.addSecond(starDate, addValue * 3600);
-			}
-			// 天
-			if (addType == 2) {
-				return DateUtil.addDay(starDate, addValue);
-			}
-			// 周
-			if (addType == 3) {
-				return DateUtil.addDay(starDate, addValue * 7);
-			}
-			// 月
-			if (addType == 4) {
-				return DateUtil.addMonth(starDate, addValue);
-			}
-			// 年
-			if (addType == 5) {
-				return DateUtil.addYear(starDate, addValue);
-			}
 		}
-		return DateUtil.parseString(dateStr);
+		Date starDate;
+		// '2019-12-13' 形式
+		if (firstString.startsWith("'") && firstString.endsWith("'")) {
+			firstString = firstString.substring(1, firstString.length() - 1);
+		}
+		if ("sysdate()".equals(firstString) || "now()".equals(firstString)) {
+			starDate = DateUtil.getNowTime();
+		} else if ("first_of_month".equals(firstString)) {
+			starDate = DateUtil.firstDayOfMonth(DateUtil.getNowTime());
+		} else if ("first_of_year".equals(firstString)) {
+			starDate = DateUtil.parse((DateUtil.getYear(DateUtil.getNowTime()) + "-01-01"), "yyyy-MM-dd");
+		} else if ("last_of_month".equals(firstString)) {
+			starDate = DateUtil.lastDayOfMonth(DateUtil.getNowTime());
+		} else if ("last_of_year".equals(firstString)) {
+			starDate = DateUtil.parse((DateUtil.getYear(DateUtil.getNowTime()) + "-12-31"), "yyyy-MM-dd");
+		} else if ("first_of_month".equals(firstString)) {
+			starDate = DateUtil.firstDayOfMonth(DateUtil.getNowTime());
+		} else if ("first_of_week".equals(firstString)) {
+			Calendar ca = Calendar.getInstance();
+			ca.setTime(DateUtil.parse(DateUtil.getNowTime(), DAY_FORMAT));
+			ca.add(Calendar.DAY_OF_WEEK, -ca.get(Calendar.DAY_OF_WEEK) + 2);
+			starDate = ca.getTime();
+		} else if ("last_of_week".equals(firstString)) {
+			Calendar ca = Calendar.getInstance();
+			ca.setTime(DateUtil.parse(DateUtil.getNowTime(), DAY_FORMAT));
+			ca.add(Calendar.DAY_OF_WEEK, -ca.get(Calendar.DAY_OF_WEEK) + 8);
+			starDate = ca.getTime();
+		} else {
+			starDate = DateUtil.parseString(firstString);
+		}
+		if (addValue == 0) {
+			return starDate;
+		}
+		// 小时
+		if (addType == 1) {
+			return DateUtil.addSecond(starDate, addValue * 3600);
+		}
+		// 天
+		if (addType == 2) {
+			return DateUtil.addDay(starDate, addValue);
+		}
+		// 周
+		if (addType == 3) {
+			return DateUtil.addDay(starDate, addValue * 7);
+		}
+		// 月
+		if (addType == 4) {
+			return DateUtil.addMonth(starDate, addValue);
+		}
+		// 年
+		if (addType == 5) {
+			return DateUtil.addYear(starDate, addValue);
+		}
+		return starDate;
 	}
 
 	/**
