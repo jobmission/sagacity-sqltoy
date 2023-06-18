@@ -130,7 +130,7 @@ public class SqltoyAutoConfiguration {
 
 		// 开放设置默认单页记录数量
 		sqlToyContext.setDefaultPageSize(properties.getDefaultPageSize());
-
+		sqlToyContext.setDefaultPageOffset(properties.isDefaultPageOffset());
 		// map 类型结果label是否自动转驼峰处理
 		if (properties.getHumpMapResultTypeLabel() != null) {
 			sqlToyContext.setHumpMapResultTypeLabel(properties.getHumpMapResultTypeLabel());
@@ -441,7 +441,7 @@ public class SqltoyAutoConfiguration {
 	}
 
 	/**
-	 * 5.2+ 版本要注入sqlToyContext
+	 * 5.2 版本要注入sqlToyContext
 	 * 
 	 * @return 返回预定义的通用Dao实例
 	 */
@@ -462,7 +462,7 @@ public class SqltoyAutoConfiguration {
 	}
 
 	/**
-	 * 5.2+ 版本要注入sqlToyLazyDao
+	 * 5.2 版本要注入sqlToyLazyDao
 	 * 
 	 * @return 返回预定义的通用CRUD service实例
 	 */
