@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.sagframe</groupId>
-	<version>5.3.33</version>
+	<version>5.3.34</version>
 	<name>sagacity-sqltoy</name>
 	<description>sagacity-sqltoy</description>
 	<artifactId>sagacity-sqltoy</artifactId>
@@ -16,12 +16,12 @@
 		<httpclient.version>4.5.14</httpclient.version>
 		<httpclient-core.version>4.4.16</httpclient-core.version>
 		<elastic-rest-client.version>8.8.2</elastic-rest-client.version>
-		<fastjson.version>2.0.36</fastjson.version>
+		<fastjson.version>2.0.37</fastjson.version>
 		<mongo.version>3.12.14</mongo.version>
-		<junit-jupiter.version>5.9.3</junit-jupiter.version>
-		<junit-platform.version>1.9.3</junit-platform.version>
+		<junit-jupiter.version>5.10.0</junit-jupiter.version>
+		<junit-platform.version>1.10.0</junit-platform.version>
 		<slf4j.version>2.0.7</slf4j.version>
-		<caffeine.version>3.1.6</caffeine.version>
+		<caffeine.version>3.1.7</caffeine.version>
 		<h2.version>2.2.220</h2.version>
 		<lombok.version>1.18.28</lombok.version>
 		<taos-jdbcdriver.version>3.2.4</taos-jdbcdriver.version>
