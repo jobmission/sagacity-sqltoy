@@ -613,7 +613,7 @@ public class DialectUtils {
 			Object[] relatedColValue = null;
 			String idJdbcType = entityMeta.getIdType();
 			String businessIdType = hasBizId ? entityMeta.getColumnJavaType(entityMeta.getBusinessIdField()) : "";
-			for (int i = 0; i < paramValues.size(); i++) {
+			for (int i = 0, end = paramValues.size(); i < end; i++) {
 				rowData = (Object[]) paramValues.get(i);
 				// 获取主键策略关联字段的值
 				if (relatedColumn != null) {
@@ -621,7 +621,9 @@ public class DialectUtils {
 					for (int meter = 0; meter < relatedColumnSize; meter++) {
 						relatedColValue[meter] = rowData[relatedColumn[meter]];
 					}
+					//这里不做是否为null的校验，因为不明确是新增还是修改
 				}
+				// 主键
 				if (hasId && StringUtil.isBlank(rowData[pkIndex])) {
 					rowData[pkIndex] = entityMeta.getIdGenerator().getId(entityMeta.getTableName(), signature,
 							entityMeta.getBizIdRelatedColumns(), relatedColValue, null, idJdbcType, idLength,
@@ -629,6 +631,7 @@ public class DialectUtils {
 					// 回写主键值
 					BeanUtil.setProperty(entities.get(i), entityMeta.getIdArray()[0], rowData[pkIndex]);
 				}
+				// 业务主键
 				if (hasBizId && StringUtil.isBlank(rowData[bizIdColIndex])) {
 					rowData[bizIdColIndex] = entityMeta.getBusinessIdGenerator().getId(entityMeta.getTableName(),
 							signature, entityMeta.getBizIdRelatedColumns(), relatedColValue, null, businessIdType,
@@ -1590,7 +1593,7 @@ public class DialectUtils {
 		Object[] rowData;
 		for (int i = 0, end = paramValues.size(); i < end; i++) {
 			rowData = (Object[]) paramValues.get(i);
-			// 判断主键策略关联的字段是否有值,合法性验证
+			// 业务主键关联字段值校验
 			if (relatedColumn != null) {
 				relatedColValue = new Object[relatedColumnSize];
 				for (int meter = 0; meter < relatedColumnSize; meter++) {
@@ -1604,15 +1607,15 @@ public class DialectUtils {
 			// 主键值为null,调用主键生成策略并赋值
 			if (hasId && StringUtil.isBlank(rowData[pkIndex])) {
 				rowData[pkIndex] = entityMeta.getIdGenerator().getId(entityMeta.getTableName(), signature,
-						entityMeta.getBizIdRelatedColumns(), relatedColValue, null, entityMeta.getIdType(),
-						entityMeta.getIdLength(), entityMeta.getBizIdSequenceSize());
+						relatedColumnNames, relatedColValue, null, entityMeta.getIdType(), entityMeta.getIdLength(),
+						entityMeta.getBizIdSequenceSize());
 				// 回写主键值
 				BeanUtil.setProperty(entities.get(i), entityMeta.getIdArray()[0], rowData[pkIndex]);
 			}
 			if (hasBizId && StringUtil.isBlank(rowData[bizIdColIndex])) {
 				rowData[bizIdColIndex] = entityMeta.getBusinessIdGenerator().getId(entityMeta.getTableName(), signature,
-						entityMeta.getBizIdRelatedColumns(), relatedColValue, null, businessIdType,
-						entityMeta.getBizIdLength(), entityMeta.getBizIdSequenceSize());
+						relatedColumnNames, relatedColValue, null, businessIdType, entityMeta.getBizIdLength(),
+						entityMeta.getBizIdSequenceSize());
 				// 回写业务主键值
 				BeanUtil.setProperty(entities.get(i), entityMeta.getBusinessIdField(), rowData[bizIdColIndex]);
 			}
@@ -1683,7 +1686,7 @@ public class DialectUtils {
 			String businessIdType = hasBizId ? entityMeta.getColumnJavaType(entityMeta.getBusinessIdField()) : "";
 			for (int i = 0, end = paramValues.size(); i < end; i++) {
 				rowData = (Object[]) paramValues.get(i);
-				// 关联字段赋值
+				// 业务主键关联字段值校验
 				if (relatedColumn != null) {
 					relatedColValue = new Object[relatedColumnSize];
 					for (int meter = 0; meter < relatedColumnSize; meter++) {
@@ -1697,15 +1700,15 @@ public class DialectUtils {
 				// 主键
 				if (hasId && StringUtil.isBlank(rowData[pkIndex])) {
 					rowData[pkIndex] = entityMeta.getIdGenerator().getId(entityMeta.getTableName(), signature,
-							entityMeta.getBizIdRelatedColumns(), relatedColValue, null, entityMeta.getIdType(),
-							entityMeta.getIdLength(), entityMeta.getBizIdSequenceSize());
+							relatedColumnNames, relatedColValue, null, entityMeta.getIdType(), entityMeta.getIdLength(),
+							entityMeta.getBizIdSequenceSize());
 					// 回写主键值
 					BeanUtil.setProperty(entities.get(i), entityMeta.getIdArray()[0], rowData[pkIndex]);
 				}
 				// 业务主键
 				if (hasBizId && StringUtil.isBlank(rowData[bizIdColIndex])) {
 					rowData[bizIdColIndex] = entityMeta.getBusinessIdGenerator().getId(entityMeta.getTableName(),
-							signature, entityMeta.getBizIdRelatedColumns(), relatedColValue, null, businessIdType,
+							signature, relatedColumnNames, relatedColValue, null, businessIdType,
 							entityMeta.getBizIdLength(), entityMeta.getBizIdSequenceSize());
 					// 回写业务主键值
 					BeanUtil.setProperty(entities.get(i), entityMeta.getBusinessIdField(), rowData[bizIdColIndex]);
