@@ -2070,6 +2070,9 @@ public class SqlToyDaoSupport {
 		EntityMeta entityMeta = getEntityMeta(entityClass);
 		validEntity(entityMeta, entityClass, false);
 		EntityUpdateExtend innerModel = entityUpdate.getInnerModel();
+		// 过滤无效set(field),即校验field不是数据库实际字段(@Column对应的属性)
+		IgnoreCaseLinkedMap<String, Object> realUpdateValues = wrapRealUpdateValues(innerModel.updateValues, entityMeta,
+				entityClass, innerModel.skipNotExistColumn);
 		boolean isName = SqlConfigParseUtils.hasNamedParam(innerModel.where);
 		Object[] values = innerModel.values;
 		String[] paramNames = null;
@@ -2099,7 +2102,6 @@ public class SqlToyDaoSupport {
 		where = SqlUtil.convertFieldsToColumns(entityMeta, where);
 		StringBuilder sql = new StringBuilder();
 		sql.append("update ").append(entityMeta.getSchemaTable(null, null)).append(" set ");
-		Entry<String, Object> entry;
 		// 对统一更新字段做处理
 		IUnifyFieldsHandler unifyHandler = getSqlToyContext().getUnifyFieldsHandler();
 		if (unifyHandler != null) {
@@ -2109,41 +2111,42 @@ public class SqlToyDaoSupport {
 			if (updateFields != null && !updateFields.isEmpty()) {
 				Iterator<Entry<String, Object>> updateIter = updateFields.entrySet().iterator();
 				String columnName;
+				Entry<String, Object> entry;
 				while (updateIter.hasNext()) {
 					entry = updateIter.next();
 					columnName = entityMeta.getColumnName(entry.getKey());
 					// 是数据库表的字段
 					if (columnName != null) {
 						// 是否已经主动update
-						if (innerModel.updateValues.containsKey(entry.getKey())
-								|| innerModel.updateValues.containsKey(columnName)) {
+						if (realUpdateValues.containsKey(entry.getKey()) || realUpdateValues.containsKey(columnName)) {
 							// 存在强制更新
 							if (unifyHandler.forceUpdateFields() != null
 									&& unifyHandler.forceUpdateFields().contains(entry.getKey())) {
 								// 覆盖主动设置的值
 								// 以表字段名称模式设置的值
-								if (innerModel.updateValues.containsKey(columnName)) {
-									innerModel.updateValues.put(columnName, entry.getValue());
+								if (realUpdateValues.containsKey(columnName)) {
+									realUpdateValues.put(columnName, entry.getValue());
 								} else {
 									// 属性名称设置的值
-									innerModel.updateValues.put(entry.getKey(), entry.getValue());
+									realUpdateValues.put(entry.getKey(), entry.getValue());
 								}
 							}
 						} else {
-							innerModel.updateValues.put(entry.getKey(), entry.getValue());
+							realUpdateValues.put(entry.getKey(), entry.getValue());
 						}
 					}
 				}
 			}
 		}
-		Object[] realValues = new Object[innerModel.updateValues.size() + valueSize];
+
+		Object[] realValues = new Object[realUpdateValues.size() + valueSize];
 		if (valueSize > 0) {
-			System.arraycopy(values, 0, realValues, innerModel.updateValues.size(), valueSize);
+			System.arraycopy(values, 0, realValues, realUpdateValues.size(), valueSize);
 		}
 		String[] realNames = null;
 		if (isName) {
 			realNames = new String[realValues.length];
-			System.arraycopy(paramNames, 0, realNames, innerModel.updateValues.size(), valueSize);
+			System.arraycopy(paramNames, 0, realNames, realUpdateValues.size(), valueSize);
 		}
 		// 强制修改的日期时间字段，且以数据库时间为准
 		IgnoreCaseSet forceUpdateSqlFields = new IgnoreCaseSet();
@@ -2157,18 +2160,19 @@ public class SqlToyDaoSupport {
 		}
 		int index = 0;
 		String columnName;
-		FieldMeta fieldMeta;
-		Iterator<Entry<String, Object>> iter = innerModel.updateValues.entrySet().iterator();
-		String[] fields;
+		Iterator<Entry<String, Object>> iter = realUpdateValues.entrySet().iterator();
 		String fieldSetValue;
 		// 设置一个扩展标志，避免set field=field+? 场景构造成field=field+:fieldExtParam跟where
 		// field=:field名称冲突
 		final String extSign = "ExtParam";
-		String fieldName;
 		DataSource dsDataSource = getDataSource(innerModel.dataSource, null);
 		Integer dbType = DataSourceUtils.getDBType(sqlToyContext, dsDataSource);
 		String nvlFun = DataSourceUtils.getNvlFunction(dbType);
 		String currentTime;
+		String[] fields;
+		FieldMeta fieldMeta;
+		String fieldName;
+		Entry<String, Object> entry;
 		while (iter.hasNext()) {
 			entry = iter.next();
 			// 考虑 field=filed+? 模式，分割成2部分
@@ -2178,9 +2182,6 @@ public class SqlToyDaoSupport {
 			if (fieldMeta == null) {
 				// 先通过数据字段名称获得类的属性名称再获取fieldMeta
 				fieldName = entityMeta.getColumnFieldMap().get(fields[0].trim().toLowerCase());
-				if (fieldName == null) {
-					throw new IllegalArgumentException("updateByQuery: 字段: " + fields[0] + " 不存在,请检查代码!");
-				}
 				fieldMeta = entityMeta.getFieldMeta(fieldName);
 			}
 			// 保留字处理
@@ -2244,6 +2245,7 @@ public class SqlToyDaoSupport {
 		queryExecutor.getInnerModel().blankToNull = (innerModel.blankToNull == null)
 				? SqlToyConstants.executeSqlBlankToNull
 				: innerModel.blankToNull;
+		queryExecutor.getInnerModel().showSql = innerModel.showSql;
 		// 为后续租户过滤提供判断依据(单表简单sql和对应的实体对象)
 		queryExecutor.getInnerModel().entityClass = entityClass;
 		setEntitySharding(queryExecutor, entityMeta);
@@ -2251,6 +2253,57 @@ public class SqlToyDaoSupport {
 				getDialect(dsDataSource));
 		sqlToyConfig.setSqlType(SqlType.update);
 		return dialectFactory.executeSql(sqlToyContext, sqlToyConfig, queryExecutor, null, null, dsDataSource);
+	}
+
+	/**
+	 * @TODO 过滤掉无效set的属性
+	 * @param updateValues
+	 * @param entityMeta
+	 * @param entityClass
+	 * @param skipNotExistColumn
+	 * @return
+	 */
+	private IgnoreCaseLinkedMap wrapRealUpdateValues(IgnoreCaseLinkedMap updateValues, EntityMeta entityMeta,
+			Class entityClass, boolean skipNotExistColumn) {
+		IgnoreCaseLinkedMap<String, Object> realUpdateValues = new IgnoreCaseLinkedMap<String, Object>();
+		// 先过滤不合法数据
+		Iterator<Entry<String, Object>> iter = updateValues.entrySet().iterator();
+		String[] fields;
+		FieldMeta fieldMeta;
+		String fieldName;
+		Entry<String, Object> entry;
+		String skipFields = new String();
+		while (iter.hasNext()) {
+			entry = iter.next();
+			fields = entry.getKey().split("=");
+			fieldMeta = entityMeta.getFieldMeta(fields[0].trim());
+			if (fieldMeta == null) {
+				// 先通过数据字段名称获得类的属性名称再获取fieldMeta
+				fieldName = entityMeta.getColumnFieldMap().get(fields[0].trim().toLowerCase());
+				if (fieldName != null) {
+					fieldMeta = entityMeta.getFieldMeta(fieldName);
+				}
+			}
+			if (fieldMeta == null) {
+				if (!skipNotExistColumn) {
+					throw new IllegalArgumentException("updateByQuery: 实体对象:" + entityClass.getName() + "属性:"
+							+ fields[0] + " 不是数据库表字段(@Column注解的表示数据库字段),请检查代码!");
+				} else {
+					if (skipFields.length() > 0) {
+						skipFields = skipFields.concat(",").concat(fields[0]);
+					} else {
+						skipFields = fields[0];
+					}
+				}
+			} else {
+				realUpdateValues.put(entry.getKey(), entry.getValue());
+			}
+		}
+		if (realUpdateValues.isEmpty()) {
+			throw new IllegalArgumentException("updateByQuery: 实体对象:" + entityClass.getName()
+					+ ",set(property,value)过程中，排除无效数据库字段属性:" + skipFields + "后，无有效更新属性(@Column注解的为数据库字段),请检查代码!");
+		}
+		return realUpdateValues;
 	}
 
 	/**
