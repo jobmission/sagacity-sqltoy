@@ -1265,7 +1265,7 @@ public class ParamFilterUtils {
 		// 这个属于极端少量的场景
 		if (param.getClass().isArray() && contrasts.length == 1) {
 			Object[] ary = CollectionUtil.convertArray(param);
-			String contrast = contrasts[0].toString();
+			String contrast = (contrasts[0] == null) ? null : contrasts[0].toString();
 			for (Object item : ary) {
 				if (item != null) {
 					if (item instanceof Enum) {
@@ -1274,6 +1274,9 @@ public class ParamFilterUtils {
 					if (item.toString().equals(contrast)) {
 						return null;
 					}
+				} // 即param==contrast,返回null
+				else if (contrast == null) {
+					return null;
 				}
 			}
 			return param;
@@ -1293,31 +1296,34 @@ public class ParamFilterUtils {
 		// 只要有一个对比值相等表示成立，返回null
 		String contrast;
 		for (Object tmp : contrasts) {
-			contrast = tmp.toString();
-			// 日期
-			if (type == 1) {
-				// 长度小于6不够成日期、时间类型格式
-				if (contrast.length() >= 6) {
-					if (tmpVar instanceof LocalTime) {
-						if (((LocalTime) tmpVar).compareTo(LocalTime.parse(contrast)) == 0) {
-							return null;
-						}
-					} else {
-						Date compareDate = "sysdate".equals(contrast.toLowerCase())
-								? DateUtil.parse(DateUtil.getNowTime(), DAY_FORMAT)
-								: DateUtil.convertDateObject(contrast);
-						if (compareDate != null && DateUtil.convertDateObject(tmpVar).compareTo(compareDate) == 0) {
-							return null;
+			// tmp==null,则tmp！=param
+			if (tmp != null) {
+				contrast = tmp.toString();
+				// 日期
+				if (type == 1) {
+					// 长度小于6不够成日期、时间类型格式
+					if (contrast.length() >= 6) {
+						if (tmpVar instanceof LocalTime) {
+							if (((LocalTime) tmpVar).compareTo(LocalTime.parse(contrast)) == 0) {
+								return null;
+							}
+						} else {
+							Date compareDate = "sysdate".equals(contrast.toLowerCase())
+									? DateUtil.parse(DateUtil.getNowTime(), DAY_FORMAT)
+									: DateUtil.convertDateObject(contrast);
+							if (compareDate != null && DateUtil.convertDateObject(tmpVar).compareTo(compareDate) == 0) {
+								return null;
+							}
 						}
 					}
-				}
-			} else if (type == 2) {
-				if (NumberUtil.isNumber(contrast)
-						&& (new BigDecimal(tmpVar.toString()).compareTo(new BigDecimal(contrast)) == 0)) {
+				} else if (type == 2) {
+					if (NumberUtil.isNumber(contrast)
+							&& (new BigDecimal(tmpVar.toString()).compareTo(new BigDecimal(contrast)) == 0)) {
+						return null;
+					}
+				} else if (tmpVar.toString().compareTo(contrast) == 0) {
 					return null;
 				}
-			} else if (tmpVar.toString().compareTo(contrast) == 0) {
-				return null;
 			}
 		}
 		return param;
@@ -1350,6 +1356,9 @@ public class ParamFilterUtils {
 					if (item.toString().equals(contrast)) {
 						return param;
 					}
+				} // contrast==param,条件不成立，返回自身
+				else if (contrast == null) {
+					return param;
 				}
 			}
 			return null;
@@ -1368,34 +1377,33 @@ public class ParamFilterUtils {
 		// 只要有一个对比值相等表示不成立，返回参数本身的值
 		String contrast;
 		for (Object tmp : contrasts) {
-			contrast = (tmp == null) ? null : tmp.toString();
-			if (StringUtil.isBlank(contrast)) {
-				return param;
-			}
-			if (type == 1) {
-				// 长度小于6不够成日期、时间类型格式
-				if (contrast.length() >= 6) {
-					if (tmpVar instanceof LocalTime) {
-						if (((LocalTime) tmpVar).compareTo(LocalTime.parse(contrast)) == 0) {
-							return param;
-						}
-					} else {
-						Date compareDate = "sysdate".equalsIgnoreCase(contrast)
-								? DateUtil.parse(DateUtil.getNowTime(), DAY_FORMAT)
-								: DateUtil.convertDateObject(contrast);
-						if (DateUtil.convertDateObject(tmpVar).compareTo(compareDate) == 0) {
-							return param;
+			// 为null，则不等于
+			if (tmp != null) {
+				contrast = tmp.toString();
+				if (type == 1) {
+					// 长度小于6不够成日期、时间类型格式
+					if (contrast.length() >= 6) {
+						if (tmpVar instanceof LocalTime) {
+							if (((LocalTime) tmpVar).compareTo(LocalTime.parse(contrast)) == 0) {
+								return param;
+							}
+						} else {
+							Date compareDate = "sysdate".equalsIgnoreCase(contrast)
+									? DateUtil.parse(DateUtil.getNowTime(), DAY_FORMAT)
+									: DateUtil.convertDateObject(contrast);
+							if (DateUtil.convertDateObject(tmpVar).compareTo(compareDate) == 0) {
+								return param;
+							}
 						}
 					}
-				}
-			} else if (type == 2) {
-				// 非数字或相等
-				if (!NumberUtil.isNumber(contrast)
-						|| (new BigDecimal(tmpVar.toString()).compareTo(new BigDecimal(contrast)) == 0)) {
+				} else if (type == 2) {
+					if (NumberUtil.isNumber(contrast)
+							&& (new BigDecimal(tmpVar.toString()).compareTo(new BigDecimal(contrast)) == 0)) {
+						return param;
+					}
+				} else if (tmpVar.toString().compareTo(contrast) == 0) {
 					return param;
 				}
-			} else if (tmpVar.toString().compareTo(contrast) == 0) {
-				return param;
 			}
 		}
 		return null;
