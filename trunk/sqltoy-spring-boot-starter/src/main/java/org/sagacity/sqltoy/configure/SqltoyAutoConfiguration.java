@@ -132,6 +132,8 @@ public class SqltoyAutoConfiguration {
 		// 开放设置默认单页记录数量
 		sqlToyContext.setDefaultPageSize(properties.getDefaultPageSize());
 		sqlToyContext.setDefaultPageOffset(properties.isDefaultPageOffset());
+		// 设置方言映射，如OSCAR==>oracle
+		sqlToyContext.setDialectMap(properties.getDialectMap());
 		// map 类型结果label是否自动转驼峰处理
 		if (properties.getHumpMapResultTypeLabel() != null) {
 			sqlToyContext.setHumpMapResultTypeLabel(properties.getHumpMapResultTypeLabel());
@@ -402,11 +404,13 @@ public class SqltoyAutoConfiguration {
 			}
 		}
 
+		// ---- sqltoy默认的规则，即:先判断是否包含beanName，然后判断是否是包路径再new 构造
 		// 自定义sql拦截处理器
 		String[] sqlInterceptors = properties.getSqlInterceptors();
 		if (null != sqlInterceptors && sqlInterceptors.length > 0) {
 			List<SqlInterceptor> sqlInterceptorList = new ArrayList<SqlInterceptor>();
 			for (String interceptor : sqlInterceptors) {
+				// 优先检查beanName
 				if (applicationContext.containsBean(interceptor)) {
 					sqlInterceptorList.add((SqlInterceptor) applicationContext.getBean(interceptor));
 				} // 包名和类名称
