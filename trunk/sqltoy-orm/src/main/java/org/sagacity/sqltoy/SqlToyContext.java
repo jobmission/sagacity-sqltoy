@@ -407,6 +407,8 @@ public class SqlToyContext {
 		// 加载sqltoy的各类参数,如db2是否要增加with
 		// ur等,详见org/sagacity/sqltoy/sqltoy-default.properties
 		SqlToyConstants.loadProperties(dialectConfig);
+		// 设置保留字
+		ReservedWordsUtil.put(reservedWords);
 		// 默认使用基于spring的连接管理
 		if (connectionFactory == null) {
 			connectionFactory = new SpringConnectionFactory();
@@ -434,8 +436,6 @@ public class SqlToyContext {
 		}
 		// 初始化实体对象管理器(此功能已经无实际意义,已经改为即用即加载而非提前加载)
 		entityManager.initialize(this);
-		// 设置保留字
-		ReservedWordsUtil.put(reservedWords);
 		// 设置默认fetchSize
 		SqlToyConstants.FETCH_SIZE = this.fetchSize;
 		SqlToyConstants.executeSqlBlankToNull = this.executeSqlBlankToNull;
